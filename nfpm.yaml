@@ -1,0 +1,22 @@
+# nfpm config file
+name: "ovh-spark-submit"
+arch: "amd64"
+platform: "linux"
+version: "0.0.1"
+#section: "default"
+#priority: "extra"
+replaces:
+- ovh-spark-submit
+provides:
+- ovh-spark-submit
+
+maintainer: "Mojtaba Imani <mojtaba.imani@corp.ovh.com>"
+description: |
+  ovh-spark-submit is a client software to submit Spark jobs to OVH Spark sa a Service platform. 
+vendor: "OVH"
+homepage: "http://OVH.com"
+license: "MIT"
+bindir: "/usr/local/bin"
+files:
+  ./build/ovh-spark-submit: "/usr/local/bin/ovh-spark-submit"
+#config_files:
