@@ -79,11 +79,11 @@ install: release
 .PHONY: deb
 deb:
 		rm -f $(BUILD_DIR)/ovh-spark-submit*.deb
-		nfpm pkg --target $(BUILD_DIR)/ovh-spark-submit.deb
+		nfpm pkg --target $(BUILD_DIR)/ovh-spark-submit-${VERSION}-x86_64.deb
 		
 
 .PHONY: rpm
 rpm:
 		rm -f ovh-spark-submit*.rpm
-		nfpm pkg --target $(BUILD_DIR)/ovh-spark-submit.rpm
+		nfpm pkg --target $(BUILD_DIR)/ovh-spark-submit-${VERSION}-x86_64.rpm
 
