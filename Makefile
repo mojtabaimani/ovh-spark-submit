@@ -29,7 +29,6 @@ init:
 	go get -u github.com/onsi/ginkgo/ginkgo
 	go get -u golang.org/x/tools/cmd/cover
 	go get -u github.com/modocache/gover
-	go get -u github.com/goreleaser/nfpm
 	$(GOPATH)/bin/gometalinter --install --no-vendored-linters
 	
 
