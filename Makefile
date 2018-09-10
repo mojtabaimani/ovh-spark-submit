@@ -20,7 +20,7 @@ VPATH 				:= $(BUILD_DIR)
 
 .SECONDEXPANSION:
 .PHONY: all
-all: build install rpm deb 
+all: init build install rpm deb 
 
 .PHONY: init
 init:
@@ -31,6 +31,7 @@ init:
 	go get -u github.com/modocache/gover
 	go get -u github.com/goreleaser/nfpm
 	$(GOPATH)/bin/gometalinter --install --no-vendored-linters
+	
 
 .PHONY: clean
 clean:

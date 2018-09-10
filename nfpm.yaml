@@ -14,7 +14,7 @@ maintainer: "Mojtaba Imani <mojtaba.imani@corp.ovh.com>"
 description: |
   ovh-spark-submit is a client software to submit Spark jobs to OVH Spark sa a Service platform. 
 vendor: "OVH"
-homepage: "http://OVH.com"
+homepage: "http://ovh.com"
 license: "MIT"
 bindir: "/usr/local/bin"
 files:
