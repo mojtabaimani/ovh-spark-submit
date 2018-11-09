@@ -10,3 +10,4 @@ coverage.txt
 *.log
 *.deb
 *.rpm
+.DS_Store

@@ -1,14 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/satori/go.uuid"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -52,32 +52,23 @@ classpath.`)
 	flagexecutormemory := flag.String("executor-memory", "", "Memory per executor (e.g. 1000M, 2G) (Default: 1G)")
 	flagproxyuser := flag.String("proxy-user", "", "User to impersonate when submitting the application")
 	flagverbose := flag.Bool("verbose", false, "Print additional debug output")
-	flagversion := flag.String("version", "2.3", "Version of Spark")
+	flagversion := flag.String("version", "2.4.0", "Version of Spark")
 	flagdrivercores := flag.Int("driver-cores", 1, "Number of cores used by the driver, only in cluster mode")
 	flagsupervise := flag.Bool("supervise", false, "If given, restarts the driver on failure")
 	flagtotalexecutorcores := flag.Int("total-executor-cores", 2, "Total cores for all executors")
 	flagexecutorcores := flag.Int("executor-cores", 0,
 		`Number of cores per executor. (Default: 1 in YARN mode
 or all available cores on the worker in standalone mode)`)
+	flagkeepinfra := flag.Bool("keep-infra", false, "By using this flag, the spark cluster will not be deleted after finishing the job. ")
 
-	////////////////////////
-
-	flagtoken := flag.String("token", "unknown", "Openstack token for authentication")
-	///////////////////////
-
-	//to avoid "declared and not used" error for all spark-submit commandline options.
-	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = flagclass, flagconf, flagdriverclasspath, flagdrivercores, flagdriverjavaoptions, flagdriverlibrarypath, flagdrivermemory, flagexcludepackages, flagexecutorcores, flagexecutormemory, flagfiles, flagjars, flagname, flagpackages, flagpropertiesfile, flagproxyuser, flagpyfiles, flagrepositories, flagsupervise, flagtotalexecutorcores, flagverbose, flagversion
+	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = flagclass, flagconf, flagdriverclasspath, flagdrivercores,
+	flagdriverjavaoptions, flagdriverlibrarypath, flagdrivermemory, flagexcludepackages, flagexecutorcores, flagexecutormemory,
+	flagfiles, flagjars, flagname, flagpackages, flagpropertiesfile, flagproxyuser, flagpyfiles, flagrepositories, flagsupervise,
+	flagtotalexecutorcores, flagverbose, flagversion, flagkeepinfra
 
 	flag.Parse()
 
-	if *flagtoken == "unknown" {
-		fmt.Println("Please enter a token")
-		panic(5)
-	}
-
 	jarpath := flag.Arg(0)
-	jarname := filepath.Base(jarpath)
-	_ = jarname
 
 	fmt.Println("name:", *flagname)
 	fmt.Println("Jar File:", jarpath)
@@ -87,51 +78,19 @@ or all available cores on the worker in standalone mode)`)
 
 	fmt.Println("all args:", allArgs)
 
-	if _, err := os.Stat(jarpath); os.IsNotExist(err) {
-		fmt.Println("Jar file does not exist.")
-		panic(err)
-	}
+	conn := UploadJar(jarpath)
 
-	file, err := os.Open(jarpath)
+	ServerAddress := "http://51.75.193.10:8090"
+
+	id, err := uuid.NewV4()
+	sessionID:=id.String()
+	fmt.Println("Session ID: "+sessionID)
 	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	ServerAddress := "http://51.38.226.197:8090"
-
-	req, err := http.NewRequest("POST", ServerAddress+"/upload?filename="+jarname, file)
-	if err != nil {
-		panic(err)
+		log.Fatalf("flake.NextID() failed with %s\n", err)
 	}
 
-	req.Header.Set("Content-Type", "application/octet-stream")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(body))
-
-	type Result struct {
-		SessionID string `json:"sessionID"`
-	}
-	var result Result
-	err2 := json.Unmarshal(body, &result)
-	if err2 != nil {
-		panic(err2)
-	}
-
-	fmt.Println("Session ID: ", result.SessionID)
-
-	resp2, err := http.PostForm(ServerAddress+"/sparksubmit", url.Values{"commandline": {allArgs}, "sessionID": {result.SessionID}, "name": {*flagname}})
+	resp2, err := http.PostForm(ServerAddress+"/sparksubmit", url.Values{"commandline": {allArgs}, "sessionID": {sessionID},
+	"name": {*flagname}, "token":{conn.AuthToken}, "projectid":{conn.TenantId}, "region":{conn.Region}})
 	if err != nil {
 		panic(err)
 	}
@@ -141,6 +100,6 @@ or all available cores on the worker in standalone mode)`)
 	}
 	fmt.Println(string(body2))
 
-	fmt.Println("Spark job submitted. You can see the output log of your Spark job by this link: " + ServerAddress + "/output/?sessionID=" + result.SessionID)
+	fmt.Println("Spark job submitted. You can see the output log of your Spark job by this link: " + ServerAddress + "/output/?sessionID=" + sessionID)
 
 }
