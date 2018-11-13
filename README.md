@@ -60,6 +60,7 @@ and set OS_REGION_NAME="GRA5".
 You can download ovh-spark-submit CLI program from these addresses: 
 
 for Mac: https://storage.gra5.cloud.ovh.net/v1/AUTH_85fbd63a73d040908046c9079ac6391f/ovh-spark-submit/mac/ovh-spark-submit
+
 for Linux: https://storage.gra5.cloud.ovh.net/v1/AUTH_85fbd63a73d040908046c9079ac6391f/ovh-spark-submit/linux/ovh-spark-submit
   
 If the downloader added some extension to the file, (for example safari adds .dms to the files without extension) 
