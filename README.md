@@ -7,8 +7,9 @@ cluster task by using this service.
 ## What is Spark ?
 
 [Apache Spark](http://spark.apache.org/) is a bigdata computing platform which is much faster 
-than its competitors like Hadoop MapReduce because of keeping data in memory. It can be run 
-locally in a single machine or it can be run in a cluster of computers to distribute its tasks.
+than its competitors like Hadoop MapReduce because of nice features like in memory processing and 
+lazy evaluation. It can be run locally in a single machine or in a cluster of computers to distribute 
+its tasks.
 
 ## What is the Analytics Data Compute ?
 
@@ -17,13 +18,14 @@ It provides you a ready computing cluster based on [Apache Spark](http://spark.a
 With Analytics Data Compute you don't need to be worry about creating and managing a network of 
 computers for running your Spark job on a Spark cluster. 
 
-Using `ovh-spark-submit` command line, you just send your code and define how much memory and 
+Using `ovh-spark-submit` command line, you just send your code and define how much 
 CPU cores you like and Analytics Data Compute will take care of everything. Command line options 
 are almost the same as original `spark-submit` command line.
 
 When you start a job, Analytics Data Compute engine creates a Spark cluster using virtual machines 
-in OVH public cloud. Once your job finishes, the cluster is destroyed and the results are sent 
-back to the user. You will be charged only for the virtual machines running during the computation time. 
+in OVH public cloud and submits the job to that cluster. Once your job finishes, the cluster is 
+destroyed and the results are sent back to the user. You will be charged only for the virtual 
+machines running during the computation time. 
 
 Also the created cluster is only dedicated for this user and this job and it will be deleted after 
 finishing the job, so the security and privacy of the user's data would be highly considered.  
@@ -33,91 +35,111 @@ different formats and sources of data for input and output.
 
 # Getting started
 
-## Create OVH Account
+## Create OVH Account and Project
 
 Before starting to use the Analytics Data Compute you need to make sure that you have an OVH.com account.
 
-Go to [ovh.com](https://www.ovh.com/manager/web/login/) and select "Create Account".
+Go to [ovh.com](https://www.ovh.com/manager/web/login/) and select "Create Account". You can find a tutorial 
+for creating a project in [this link.](https://docs.ovh.com/gb/en/public-cloud/getting_started_with_public_cloud_logging_in_and_creating_a_project/)
 
-## Generate Openstack Token
+## Create Openstack user account and Openrc.sh
 
-For using Analytics Data Compute you need to generate an Openstack token. Analytics Data Compute 
-will use this token to generate the cluster inside the project of user. You can generate the token 
-and store it in an environment variable like TOKEN. 
+After creating OVH account and project, you need to create an Openstack user account. You can find a tutorial 
+in [this link](https://docs.ovh.com/gb/en/public-cloud/configure_user_access_to_horizon/) and login to your
+Horizon dashboard. In Horizon dashboard you will have a link to download your Openstack credential as a 
+bash file, like openrc.sh and you need to source this file to have required environment variables. 
+For loading this file after downloading, you can run: 
+```
+$ source openrc.sh
+```
+Then by sourcing this file you will have all environment variables that ovh-spark-submit requires. For better 
+performance it is recommended that you use "GRA5" region. For set the region, you can open openrc.sh in any editor 
+and set OS_REGION_NAME="GRA5". 
 
-The Openstack command for generating token: 
+## Download ovh-spark-submit CLI program:
+You can download ovh-spark-submit CLI program from these addresses: 
 
-### Prerequisite
-```
-$ pip install python-openstackclient
-```
+for Mac: https://storage.gra5.cloud.ovh.net/v1/AUTH_85fbd63a73d040908046c9079ac6391f/ovh-spark-submit/mac/ovh-spark-submit
+for Linux: https://storage.gra5.cloud.ovh.net/v1/AUTH_85fbd63a73d040908046c9079ac6391f/ovh-spark-submit/linux/ovh-spark-submit
+  
+If the downloader added some extension to the file, (for example safari adds .dms to the files without extension) 
+remove the extension. You can also download the CLI using wget or curl commands.
 
-To generate token, run: 
-
+for Mac: 
 ```
-$ openstack token issue
+$ curl -o ovh-spark-submit https://storage.gra5.cloud.ovh.net/v1/AUTH_85fbd63a73d040908046c9079ac6391f/ovh-spark-submit/mac/ovh-spark-submit
 ```
-Then you can copy the token and save it in TOKEN variable by this command: 
+for Linux: 
 ```
-$ export TOKEN=<paste the token here>
+$ curl -o ovh-spark-submit https://storage.gra5.cloud.ovh.net/v1/AUTH_85fbd63a73d040908046c9079ac6391f/ovh-spark-submit/linux/ovh-spark-submit
 ```
-You can see the openstack commandline installation documentation in 
-[openstack](https://docs.openstack.org/newton/user-guide/common/cli-install-openstack-command-line-clients.html) web page. 
-
-## Install the application
-
-Before installing the application, you need to add the OVH Dataconvergence repository to your 
-system and then install ovh-spark-submit package. 
-
-### For Debian/Ubuntu linux: 
-
-1. Run this command to add dataconvergence repository to your system: 
+  
+Then run this command to make the downloaded file executable:
 ```
-$ sudo add-apt-repository 'deb https://repository.dataconvergence.ovh.com/repository/debian stable main'
-```
-2. Then run this command to add the repository key: 
-```
-$ sudo apt-key adv --recv-keys --keyserver keyserver.ubuntu.com C4F21B73
-```
-3. Then update and install ovh-spark-submit: 
-```
-$ sudo apt update
-$ sudo apt install ovh-spark-submit
+$ chmod +x ovh-spark-submit
 ```
 
-### For CentOS linux: 
+You can also build the ovh-spark-submit instead of downloading by running `make all`
 
-1. Create dataconvergence.repo in /etc/yum.repos.d/ and add this text to the file:
+## Run your spark job
+usage:  
 ```
-[dataconvergence]
-baseurl = https://repository.dataconvergence.ovh.com/repository/centos/7/os/x86_64/
-gpgcheck = 1
-gpgkey = https://repository.dataconvergence.ovh.com/repository/gpg-keys/RPM-GPG-KEY-dcrepo
-name = data convergence repo
+$ ./ovh-spark-submit [options] <jar file> <arguments>
 ```
 
-2. Install ovh-spark-submit: 
-```
-$ sudo yum install ovh-spark-submit
-```
-
-## Example 
-
-In this example we use the sample jar file from official Spark package called: spark-examples_2.11-2.3.1.jar 
-that you can download from official [Apache Spark](http://spark.apache.org/) version 2.3.1
-
-Before running this command line you have to generate an Openstack token and store the token in 
-TOKEN environment variable. 
+ovh-spark-submit command line options are almost the same as original spark-submit without `--deploy-mode` 
+and `--master`. For example:
 
 ```
-$ ovh-spark-submit \
---token $TOKEN \
---class org.apache.spark.examples.SparkPi \
---name SparkJob1 \
---executor-memory 2G \
---total-executor-cores 4 \
-spark-examples_2.11-2.3.1.jar 1000
+$ ./ovh-spark-submit \
+   --class org.apache.spark.examples.SparkPi \
+   spark-examples_2.11-2.4.0.jar 1000
 ```
+
+This is the minimum command line. In this case it will run the latest Spark version on a cluster with 1 master 
+and 1 worker with 4 cores. (You can find spark-examples_2.11-2.4.0.jar file inside the official apache spark 
+package folder)
+
+You can specify the version of Spark and the total number of cores as well. For example:
+```  
+./ovh-spark-submit \
+   --class org.apache.spark.examples.SparkPi \
+   --name Simulation01 \
+   --version 2.4.0 \
+   --total-executor-cores 8 \
+   spark-examples_2.11-2.4.0.jar 1000
+```  
+
+After running this command, a cluster in OVH public cloud will be created and after finishing the computation, 
+it will be automatically deleted.  After running the command your jar file will be uploaded to the swift storage 
+of your openstack project. Then you will have a link to the output log of your cluster that you can read the log
+ and results of your code by using curl or by just simply open the link in a browser. Then each time you refresh 
+ the page, you will see the updated logs until the end of the job.
+ 
+### Pro tip #1 : How to calculate your billing ?
+For creating the cluster we use flavor b2-15, it means that each worker node will have 4 cores and 13 GB memory. 
+For example if you add the option: `total-executor-cores 8`, you will need 8/4=2 worker nodes plus one for master node
+and totally 3 nodes. Then according to the time of execution, you can calculate the cost of service for each job 
+based on the cost of b2-15 in [OVH tarifs website](https://www.ovh.com/fr/public-cloud/instances/tarifs/). 
+Be aware that it will be calculate per hour basis. For example if you use a cluster for 5 minutes, 
+it will be considered as 1 hour.
+  
+### Pro tip #2 : Want to keep your cluster ?
+There is an option which you can create cluster and keep it and send as many as jobs that you like. You just need 
+to add `--keep-infra` option to your command line. 
+But you need to delete the cluster when you don't need the cluster anymore. 
+Be careful because if you forget to delete the cluster, you will be charged for the VMs that you have in your project. 
+After running the command line, you will find the address of master in the output log.
+  
+Please send us your questions, feedback and suggestions to improve the service: 
+
+On OVH Community: https://community.ovh.com/c/platform/big-data
+On OVH public Mailing-list :  ovh-analytics@ml.ovh.net
+On Gitter: https://gitter.im/ovh/lab-spark
+
+Best Regards,
+The OVH data convergence team
+
 
 # Study more: 
 
