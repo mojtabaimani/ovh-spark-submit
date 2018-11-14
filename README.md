@@ -2,7 +2,7 @@
 
 Welcome to the getting started guide of OVH Analytics Data Compute. This guide will help you to 
 understand the core concepts behind the Analytics Data Compute and how to run your first Spark 
-cluster task by using this service.
+cluster job by using this service.
 
 ## What is Spark ?
 
