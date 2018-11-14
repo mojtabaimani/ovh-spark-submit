@@ -134,9 +134,9 @@ After running the command line, you will find the address of master in the outpu
   
 Please send us your questions, feedback and suggestions to improve the service: 
 
-On OVH Community: https://community.ovh.com/c/platform/big-data
-On OVH public Mailing-list :  ovh-analytics@ml.ovh.net
-On Gitter: https://gitter.im/ovh/lab-spark
+- On OVH Community: https://community.ovh.com/c/platform/big-data
+- On OVH public Mailing-list :  ovh-analytics@ml.ovh.net 
+- On Gitter: https://gitter.im/ovh/lab-spark
 
 Best Regards,
 The OVH data convergence team
