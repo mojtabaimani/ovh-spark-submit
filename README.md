@@ -138,9 +138,6 @@ Please send us your questions, feedback and suggestions to improve the service:
 - On OVH public Mailing-list :  ovh-analytics@ml.ovh.net 
 - On Gitter: https://gitter.im/ovh/lab-spark
 
-Best Regards,
-The OVH data convergence team
-
 
 # Study more: 
 
