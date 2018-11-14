@@ -63,11 +63,6 @@ and set OS_REGION_NAME="GRA5".
 
 ## Download ovh-spark-submit CLI program:
 You can download ovh-spark-submit CLI program from these addresses: 
-https://repository.dataconvergence.ovh.com/repository/binary/ovh-spark-submit/linux/ovh-spark-submit
-https://repository.dataconvergence.ovh.com/repository/binary/ovh-spark-submit/mac/ovh-spark-submit
-
-
-
 
 for Mac: https://repository.dataconvergence.ovh.com/repository/binary/ovh-spark-submit/mac/ovh-spark-submit
 
