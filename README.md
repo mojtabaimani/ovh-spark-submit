@@ -35,15 +35,21 @@ different formats and sources of data for input and output.
 
 # Getting started
 
-## Create OVH Account and Project
+## Create an OVH Account
+Before starting to use the Analytics Data Compute you need to make sure that you have an [ovh.com](www.ovh.com) account (NIC). 
+If needed, go to [ovh.com](https://www.ovh.com/manager/web/login/) and select "Create Account". 
 
-Before starting to use the Analytics Data Compute you need to make sure that you have an OVH.com account.
 
-Go to [ovh.com](https://www.ovh.com/manager/web/login/) and select "Create Account". You can find a tutorial 
-for creating a project in [this link.](https://docs.ovh.com/gb/en/public-cloud/getting_started_with_public_cloud_logging_in_and_creating_a_project/)
+## Create a Public Cloud Project 
+In order to spawn automatically an Apache Spark cluster, we need to have access to a new OVH Public Cloud project.
+This project will contain all the storage and compute required to run your Apache Spark jobs.
+
+Create a new one by following
+ [this tutorial.](https://docs.ovh.com/gb/en/public-cloud/getting_started_with_public_cloud_logging_in_and_creating_a_project/)
+If you have a voucher, you can activate it during this step.
+If you browse this project, in the "project managed" tab, you'll have all details about consumptions.
 
 ## Create Openstack user account and Openrc.sh
-
 After creating OVH account and project, you need to create an Openstack user account. You can find a tutorial 
 in [this link](https://docs.ovh.com/gb/en/public-cloud/configure_user_access_to_horizon/) and login to your
 Horizon dashboard. In Horizon dashboard you will have a link to download your Openstack credential as a 
@@ -118,10 +124,11 @@ of your openstack project. Then you will have a link to the output log of your c
  the page, you will see the updated logs until the end of the job.
  
 ### Pro tip #1 : How to calculate your billing ?
-For creating the cluster we use flavor b2-15, it means that each worker node will have 4 cores and 13 GB memory. 
+For creating the cluster we use flavor b2-15, it means that each worker node will have 4 cores and 15 GB memory. 
 For example if you add the option: `total-executor-cores 8`, you will need 8/4=2 worker nodes plus one for master node
 and totally 3 nodes. Then according to the time of execution, you can calculate the cost of service for each job 
-based on the cost of b2-15 in [OVH tarifs website](https://www.ovh.com/fr/public-cloud/instances/tarifs/). 
+based on the cost of b2-15 in OVH tarifs website. (For example, here is the
+ [FR Pricing.](https://www.ovh.com/fr/public-cloud/instances/tarifs/)). 
 Be aware that it will be calculate per hour basis. For example if you use a cluster for 5 minutes, 
 it will be considered as 1 hour.
   
