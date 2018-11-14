@@ -14,9 +14,8 @@ its tasks.
 ## What is the Analytics Data Compute ?
 
 It provides you a ready computing cluster based on [Apache Spark](http://spark.apache.org/).
-
 With Analytics Data Compute you don't need to be worry about creating and managing a network of 
-computers for running your Spark job on a Spark cluster. 
+computers for running your Spark job on a cluster of computers. 
 
 Using `ovh-spark-submit` command line, you just send your code and define how much 
 CPU cores you like and Analytics Data Compute will take care of everything. Command line options 
@@ -49,7 +48,7 @@ Create a new one by following
 If you have a voucher, you can activate it during this step.
 If you browse this project, in the "project managed" tab, you'll have all details about consumptions.
 
-## Create Openstack user account and Openrc.sh
+## Create Openstack user account and openrc.sh
 After creating OVH account and project, you need to create an Openstack user account. You can find a tutorial 
 in [this link](https://docs.ovh.com/gb/en/public-cloud/configure_user_access_to_horizon/) and login to your
 Horizon dashboard. In Horizon dashboard you will have a link to download your Openstack credential as a 
@@ -86,7 +85,7 @@ Then run this command to make the downloaded file executable:
 $ chmod +x ovh-spark-submit
 ```
 
-You can also build the ovh-spark-submit instead of downloading by running `make all`
+You can also build the ovh-spark-submit instead of downloading by cloning the code and running `make all`
 
 ## Run your spark job
 usage:  
@@ -103,8 +102,9 @@ $ ./ovh-spark-submit \
    spark-examples_2.11-2.4.0.jar 1000
 ```
 
-This is the minimum command line. In this case it will run the latest Spark version on a cluster with 1 master 
-and 1 worker with 4 cores. (You can find spark-examples_2.11-2.4.0.jar file inside the official apache spark 
+This is the minimum command line. In this case it will create a cluster with 1 master 
+and 1 worker with 4 cores and will installs the latest Spark version. Then the program will run the SparkPi example
+and shows the result. (You can find spark-examples_2.11-2.4.0.jar file inside the official apache spark 
 package folder)
 
 You can specify the version of Spark and the total number of cores as well. For example:
@@ -129,7 +129,7 @@ For example if you add the option: `total-executor-cores 8`, you will need 8/4=2
 and totally 3 nodes. Then according to the time of execution, you can calculate the cost of service for each job 
 based on the cost of b2-15 in OVH tarifs website. (For example, here is the
  [FR Pricing.](https://www.ovh.com/fr/public-cloud/instances/tarifs/)). 
-Be aware that it will be calculate per hour basis. For example if you use a cluster for 5 minutes, 
+Be aware that it will be calculated per hour basis. For example if you use a cluster for 5 minutes, 
 it will be considered as 1 hour.
   
 ### Pro tip #2 : Want to keep your cluster ?
