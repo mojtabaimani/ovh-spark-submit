@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/satori/go.uuid"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -69,12 +68,17 @@ or all available cores on the worker in standalone mode)`)
 		"By using this flag, the spark cluster will not be deleted after finishing the job. ")
 
 	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = flagclass, flagconf,
-	flagdriverclasspath, flagdrivercores,	flagdriverjavaoptions, flagdriverlibrarypath, flagdrivermemory,
-	flagexcludepackages, flagexecutorcores, flagexecutormemory,	flagfiles, flagjars, flagname, flagpackages,
-	flagpropertiesfile, flagproxyuser, flagpyfiles, flagrepositories, flagsupervise, flagtotalexecutorcores,
-	flagverbose, flagversion, flagkeepinfra
+		flagdriverclasspath, flagdrivercores, flagdriverjavaoptions, flagdriverlibrarypath, flagdrivermemory,
+		flagexcludepackages, flagexecutorcores, flagexecutormemory, flagfiles, flagjars, flagname, flagpackages,
+		flagpropertiesfile, flagproxyuser, flagpyfiles, flagrepositories, flagsupervise, flagtotalexecutorcores,
+		flagverbose, flagversion, flagkeepinfra
 
 	flag.Parse()
+
+	if *flagclass == "" {
+		fmt.Println("Please enter the class name in --class option ")
+		os.Exit(1)
+	}
 
 	jarpath := flag.Arg(0)
 
@@ -91,23 +95,26 @@ or all available cores on the worker in standalone mode)`)
 	ServerAddress := "http://51.75.193.10:8090"
 
 	id, err := uuid.NewV4()
-	sessionID:=id.String()
-	fmt.Println("Session ID: "+sessionID)
+	sessionID := id.String()
+	fmt.Println("Session ID: " + sessionID)
 	if err != nil {
-		log.Fatalf("flake.NextID() failed with %s\n", err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	resp2, err := http.PostForm(ServerAddress+"/sparksubmit", url.Values{"commandline": {allArgs},
-	"sessionID": {sessionID},"name": {*flagname}, "token":{conn.AuthToken}, "projectid":{conn.TenantId},
-	"region":{conn.Region}})
+	resp, err := http.PostForm(ServerAddress+"/sparksubmit", url.Values{"commandline": {allArgs},
+		"sessionID": {sessionID}, "name": {*flagname}, "token": {conn.AuthToken}, "projectid": {conn.TenantId},
+		"region": {conn.Region}})
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
-	body2, err := ioutil.ReadAll(resp2.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
-	fmt.Println(string(body2))
+	fmt.Println(string(body))
 
 	fmt.Println("Spark job submitted. You can see the output log of your Spark job by this link: " +
 		ServerAddress + "/output/?sessionID=" + sessionID)
