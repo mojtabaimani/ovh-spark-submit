@@ -9,7 +9,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 )
+var wg sync.WaitGroup
 
 func main() {
 
@@ -80,6 +82,8 @@ or all available cores on the worker in standalone mode)`)
 		os.Exit(1)
 	}
 
+	CheckSparkVersion(*flagversion)
+
 	jarpath := flag.Arg(0)
 
 	fmt.Println("name:", *flagname)
@@ -90,7 +94,14 @@ or all available cores on the worker in standalone mode)`)
 
 	fmt.Println("all args:", allArgs)
 
-	conn := UploadJar(jarpath)
+
+	conn := Authenticate()
+
+	CheckJarFile(jarpath, conn)
+
+	wg.Add(1)
+
+	go UploadJar(jarpath, conn)
 
 	ServerAddress := "http://51.75.193.10:8090"
 
@@ -119,4 +130,8 @@ or all available cores on the worker in standalone mode)`)
 	fmt.Println("Spark job submitted. You can see the output log of your Spark job by this link: " +
 		ServerAddress + "/output/?sessionID=" + sessionID)
 
+	wg.Wait()
+
 }
+
+
