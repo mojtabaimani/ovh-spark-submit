@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func AuthOptionsFromEnv() (AuthOptions, error) {
@@ -42,6 +43,10 @@ func AuthOptionsFromEnv() (AuthOptions, error) {
 
 	if regionName == "" {
 		fmt.Println("Environment variable OS_REGION_NAME is missing.")
+		os.Exit(1)
+	}
+	if strings.ToLower(regionName) == "sbg3" {
+		fmt.Println("Region SBG3 is not supported. Please change the region in OS_REGION_NAME variable.") //TODO: it should be changed if the PCI updated the openstack of SBG3 region.
 		os.Exit(1)
 	}
 

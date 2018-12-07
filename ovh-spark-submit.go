@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 var wg sync.WaitGroup
 
@@ -68,12 +70,15 @@ classpath.`)
 or all available cores on the worker in standalone mode)`)
 	flagkeepinfra := flag.Bool("keep-infra", false,
 		"By using this flag, the spark cluster will not be deleted after finishing the job. ")
+	flagdeployer := flag.String("deployer", "publicsequentialworkerjoin", "It selects deployer and infrastructure type.")
+	flagnetwork := flag.String("network", "Ext-Net", "Private network name inside openstack project." +
+		"If if is not mentioned, the cluster will be created in public network Ext-Net")
 
-	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = flagclass, flagconf,
+	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _,_ = flagclass, flagconf,
 		flagdriverclasspath, flagdrivercores, flagdriverjavaoptions, flagdriverlibrarypath, flagdrivermemory,
 		flagexcludepackages, flagexecutorcores, flagexecutormemory, flagfiles, flagjars, flagname, flagpackages,
 		flagpropertiesfile, flagproxyuser, flagpyfiles, flagrepositories, flagsupervise, flagtotalexecutorcores,
-		flagverbose, flagversion, flagkeepinfra
+		flagverbose, flagversion, flagkeepinfra, flagdeployer,flagnetwork
 
 	flag.Parse()
 
@@ -113,13 +118,18 @@ or all available cores on the worker in standalone mode)`)
 		os.Exit(1)
 	}
 
+	if *flagdeployer=="vracfloatingip" && *flagnetwork == "Ext-Net"{
+		*flagnetwork="sparknetwork"
+	}
+
 	resp, err := http.PostForm(ServerAddress+"/sparksubmit", url.Values{"commandline": {allArgs},
 		"sessionID": {sessionID}, "name": {*flagname}, "token": {conn.AuthToken}, "projectid": {conn.TenantId},
-		"region": {conn.Region}})
+		"region": {conn.Region}, "deployer":{*flagdeployer}, "network":{*flagnetwork}})
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
@@ -129,6 +139,30 @@ or all available cores on the worker in standalone mode)`)
 
 	fmt.Println("Spark job submitted. You can see the output log of your Spark job by this link: " +
 		ServerAddress + "/output/?sessionID=" + sessionID)
+
+	var offset int = 0
+	var output string =""
+	for !strings.Contains(output, "Goodbye") && !strings.Contains(output, "failed")	{
+		resp, err := http.Get(ServerAddress+"/output/?sessionID="+sessionID+"&offset="+strconv.Itoa(offset))
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		offset+=len(body)
+		output=string(body)
+		fmt.Print(output)
+
+		resp.Body.Close()
+		time.Sleep(400 * time.Millisecond)
+		//write output to the local log file
+
+	}
+
 
 	wg.Wait()
 
