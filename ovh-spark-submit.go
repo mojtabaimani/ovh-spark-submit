@@ -142,7 +142,7 @@ or all available cores on the worker in standalone mode)`)
 
 	var offset int = 0
 	var output string =""
-	for !strings.Contains(output, "Goodbye") && !strings.Contains(output, "failed")	{
+	for !strings.Contains(output, "Goodbye.") && !strings.Contains(output, "failed!!")	{
 		resp, err := http.Get(ServerAddress+"/output/?sessionID="+sessionID+"&offset="+strconv.Itoa(offset))
 		if err != nil {
 			fmt.Println(err)
