@@ -121,21 +121,25 @@ You can specify the version of Spark and the total number of cores as well. For 
    spark-examples_2.11-2.4.0.jar 1000
 ```  
 
-After running this command, a cluster in OVH public cloud will be created and after finishing the computation, 
-it will be automatically deleted.  After running the command your jar file will be uploaded to the swift storage 
-of your Openstack project. Then you will have a link to the output log of your cluster and Spark job that you can read the log
- and results of your code by using curl or by just simply open the link in a browser. Then each time you refresh 
- the page, you will see the updated logs until the end of the job. After finishing the Spark job, this log file will be 
- saved in your Swift storage in the same region that you mentioned in you openrc.sh file or in OS_REGION_NAME environment 
- variable and in "SparkLogs" container. So, to see the logs and results you can go to horizon dashboard:
-  [https://horizon.cloud.ovh.net](https://horizon.cloud.ovh.net) and then go to "Object Store" -> Containers -> SparkLogs 
- and you will find the logs folders based on date and time of Spark job. 
-  
- 
-Also you can find the address of Spark official master dashboard and SparkUI in this log page and you can open dashboard 
-and UI separately if you like. Master dashboard is on port 8080 of master IP (like: http://1.2.3.4:8080) and SparkUI will 
-be on port 4040 of one of the workers (like: http://1.2.3.4:4040). 
+After running this command, your jar file will be uploaded to the swift storage 
+of your Openstack project. Then a cluster in OVH public cloud will be created and after finishing the computation, 
+it will be automatically deleted. 
 
+## Run your job in a private netowrk in vRack
+You can create your cluster in a private network in vRack. So it is more secure than a public network. For using this feature add the option `--deployer vracfloatingip` to your command line. For example: 
+```
+./ovh-spark-submit \
+  --class org.apache.spark.examples.SparkPi \
+  --name Simulation01 \
+  --version 2.4.0 \
+  --total-executor-cores 10 \
+  --executor-memory 10G \
+  --deployer vracfloatingip \
+  swift://jar/spark-examples_2.11-2.4.0.jar  1000
+```
+For using this feature you need to request for floating IP from OVH and currently it is active only in GRA5 region. 
+
+## Addressing Jar file from Openstack swift storage
 By running ovh-spark-submit command line and by addressing your jar file from you local machine, the jar file will be 
 uploaded to your Swift storage in a container named "jar", then the spark cluster will read the jar file from this container.
 It is possible also to put your jar file in your Swift storage first and use its address in ovh-spark-submit command line. 
@@ -143,7 +147,7 @@ For this purpose you need to add "swift://" at the beginning of the address foll
 file name of your jar file. Be aware that names of containers and files in Swift are case sensitive and the jar file in 
 Swift should be in the same region that you mentioned in your openrc.sh file or OS_REGION_NAME environment variable. 
 Using this feature is specially useful when you have a big jar file and slow internet connection and you run the cluster 
-several times without any change in the jar file and thus you don't like to upload the jar file each time you run a 
+several times without any change in the jar file and thus you don't like to upload the same jar file each time you run a 
 Spark job. For example: 
 ```  
 ./ovh-spark-submit \
@@ -153,7 +157,19 @@ Spark job. For example:
    --total-executor-cores 8 \
    swift://jar/spark-examples_2.11-2.4.0.jar 1000
 ```  
+
+## Log files 
+ After finishing the Spark job, the log file will be saved in your Swift storage in the same region that you mentioned in 
+ your openrc.sh file or in OS_REGION_NAME environment variable and in "SparkLogs" container. So, to download the logs and results 
+ you can go to horizon dashboard: [https://horizon.cloud.ovh.net](https://horizon.cloud.ovh.net) and then go to
+  "Object Store" -> Containers -> SparkLogs  and you will find the logs folders based on date and time of Spark job. 
+
+Also a copy of log file will be saved in your local machine in "SparkLogs" folder in your home directory. 
  
+Also you can find the address of Spark official master dashboard and SparkUI in this log page and you can open dashboard 
+and UI separately if you like. Master dashboard is on port 8080 of master IP (like: http://1.2.3.4:8080) and SparkUI will 
+be on port 4040 (like: http://1.2.3.4:4040). Then you can see all stdout and stderr of all workers and apps and also more details and information about your cluster. 
+
 ### Pro tip #1 : How to calculate your billing ?
 For creating the cluster we use flavor b2-15, it means that each worker node will have 4 cores and 15 GB memory. 
 For example if you add the option: `total-executor-cores 8`, you will need 8/4=2 worker nodes plus one for master node
