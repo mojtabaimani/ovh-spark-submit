@@ -18,7 +18,7 @@ var wg sync.WaitGroup
 func main() {
 
 	flagclass := flag.String("class", "", "Your application's main class (for Java / Scala apps)")
-	flagname := flag.String("name", "noName", "A name of your application")
+	flagname := flag.String("name", "NoName", "A name of your application")
 	flagjars := flag.String("jars", "", `Comma-separated list of jars to include on the driver 
 and executor classpaths`)
 	flagpackages := flag.String("packages", "",
@@ -108,7 +108,8 @@ or all available cores on the worker in standalone mode)`)
 
 	go UploadJar(jarpath, conn)
 
-	ServerAddress := "http://51.75.193.10:8090"
+	// ServerAddress := "http://51.75.193.10:8090"   //sparkalpha main server
+	ServerAddress := "http://145.239.28.145:8090"    //pre production test server
 
 	id, err := uuid.NewV4()
 	sessionID := id.String()
@@ -137,11 +138,18 @@ or all available cores on the worker in standalone mode)`)
 	}
 	fmt.Println(string(body))
 
-	fmt.Println("Spark job submitted. You can see the output log of your Spark job by this link: " +
-		ServerAddress + "/output/?sessionID=" + sessionID)
+	//fmt.Println("Spark job submitted. You can see the output log of your Spark job by this link: " +
+	//	ServerAddress + "/output/?sessionID=" + sessionID)
 
-	var offset int = 0
-	var output string =""
+
+	currentTime :=time.Now()
+	var home = os.Getenv("HOME")
+	var logPath =home+"/SparkLogs/"+currentTime.Format("2006")+"/"+currentTime.Format("01")+"/"+
+		currentTime.Format("02")+"/"+currentTime.Format("15-04-05-")+ *flagname+"/"
+	var logFullAddress = logPath+sessionID+".log"
+	os.MkdirAll(logPath,os.ModePerm)
+	var offset = 0
+	var output =""
 	for !strings.Contains(output, "Goodbye.") && !strings.Contains(output, "failed!!")	{
 		resp, err := http.Get(ServerAddress+"/output/?sessionID="+sessionID+"&offset="+strconv.Itoa(offset))
 		if err != nil {
@@ -157,11 +165,28 @@ or all available cores on the worker in standalone mode)`)
 		output=string(body)
 		fmt.Print(output)
 
+		f, err := os.OpenFile(logFullAddress, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		if _, err := f.WriteString(output); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		if err := f.Close(); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
 		resp.Body.Close()
 		time.Sleep(400 * time.Millisecond)
 		//write output to the local log file
 
 	}
+
+	fmt.Println("Logs were saved in your openstack swift storage and also in your local machine at addresss: \n" +
+		logFullAddress)
 
 
 	wg.Wait()
