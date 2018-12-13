@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 )
+
 var wg sync.WaitGroup
 
 func main() {
@@ -71,14 +72,14 @@ or all available cores on the worker in standalone mode)`)
 	flagkeepinfra := flag.Bool("keep-infra", false,
 		"By using this flag, the spark cluster will not be deleted after finishing the job. ")
 	flagdeployer := flag.String("deployer", "publicsequentialworkerjoin", "It selects deployer and infrastructure type.")
-	flagnetwork := flag.String("network", "Ext-Net", "Private network name inside openstack project." +
+	flagnetwork := flag.String("network", "Ext-Net", "Private network name inside openstack project."+
 		"If if is not mentioned, the cluster will be created in public network Ext-Net")
 
-	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _,_ = flagclass, flagconf,
+	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = flagclass, flagconf,
 		flagdriverclasspath, flagdrivercores, flagdriverjavaoptions, flagdriverlibrarypath, flagdrivermemory,
 		flagexcludepackages, flagexecutorcores, flagexecutormemory, flagfiles, flagjars, flagname, flagpackages,
 		flagpropertiesfile, flagproxyuser, flagpyfiles, flagrepositories, flagsupervise, flagtotalexecutorcores,
-		flagverbose, flagversion, flagkeepinfra, flagdeployer,flagnetwork
+		flagverbose, flagversion, flagkeepinfra, flagdeployer, flagnetwork
 
 	flag.Parse()
 
@@ -99,7 +100,6 @@ or all available cores on the worker in standalone mode)`)
 
 	fmt.Println("all args:", allArgs)
 
-
 	conn := Authenticate()
 
 	CheckJarFile(jarpath, conn)
@@ -108,8 +108,8 @@ or all available cores on the worker in standalone mode)`)
 
 	go UploadJar(jarpath, conn)
 
-	// ServerAddress := "http://51.75.193.10:8090"   //sparkalpha main server
-	ServerAddress := "http://145.239.28.145:8090"    //pre production test server
+	ServerAddress := "http://51.75.193.10:8090" //sparkalpha main server
+	//ServerAddress := "http://145.239.28.145:8090"    //pre production test server
 
 	id, err := uuid.NewV4()
 	sessionID := id.String()
@@ -119,13 +119,13 @@ or all available cores on the worker in standalone mode)`)
 		os.Exit(1)
 	}
 
-	if *flagdeployer=="vracfloatingip" && *flagnetwork == "Ext-Net"{
-		*flagnetwork="sparknetwork"
+	if *flagdeployer == "vracfloatingip" && *flagnetwork == "Ext-Net" {
+		*flagnetwork = "sparknetwork"
 	}
 
 	resp, err := http.PostForm(ServerAddress+"/sparksubmit", url.Values{"commandline": {allArgs},
 		"sessionID": {sessionID}, "name": {*flagname}, "token": {conn.AuthToken}, "projectid": {conn.TenantId},
-		"region": {conn.Region}, "deployer":{*flagdeployer}, "network":{*flagnetwork}})
+		"region": {conn.Region}, "deployer": {*flagdeployer}, "network": {*flagnetwork}})
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -141,17 +141,16 @@ or all available cores on the worker in standalone mode)`)
 	//fmt.Println("Spark job submitted. You can see the output log of your Spark job by this link: " +
 	//	ServerAddress + "/output/?sessionID=" + sessionID)
 
-
-	currentTime :=time.Now()
+	currentTime := time.Now()
 	var home = os.Getenv("HOME")
-	var logPath =home+"/SparkLogs/"+currentTime.Format("2006")+"/"+currentTime.Format("01")+"/"+
-		currentTime.Format("02")+"/"+currentTime.Format("15-04-05-")+ *flagname+"/"
-	var logFullAddress = logPath+sessionID+".log"
-	os.MkdirAll(logPath,os.ModePerm)
+	var logPath = home + "/SparkLogs/" + currentTime.Format("2006") + "/" + currentTime.Format("01") + "/" +
+		currentTime.Format("02") + "/" + currentTime.Format("15-04-05-") + *flagname + "/"
+	var logFullAddress = logPath + sessionID + ".log"
+	os.MkdirAll(logPath, os.ModePerm)
 	var offset = 0
-	var output =""
-	for !strings.Contains(output, "Goodbye.") && !strings.Contains(output, "failed!!")	{
-		resp, err := http.Get(ServerAddress+"/output/?sessionID="+sessionID+"&offset="+strconv.Itoa(offset))
+	var output = ""
+	for !strings.Contains(output, "Goodbye.") && !strings.Contains(output, "failed!!") {
+		resp, err := http.Get(ServerAddress + "/output/?sessionID=" + sessionID + "&offset=" + strconv.Itoa(offset))
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -161,8 +160,8 @@ or all available cores on the worker in standalone mode)`)
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		offset+=len(body)
-		output=string(body)
+		offset += len(body)
+		output = string(body)
 		fmt.Print(output)
 
 		f, err := os.OpenFile(logFullAddress, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
@@ -188,9 +187,6 @@ or all available cores on the worker in standalone mode)`)
 	fmt.Println("Logs were saved in your openstack swift storage and also in your local machine at addresss: \n" +
 		logFullAddress)
 
-
 	wg.Wait()
 
 }
-
-

@@ -125,8 +125,9 @@ After running this command, your jar file will be uploaded to the swift storage
 of your Openstack project. Then a cluster in OVH public cloud will be created and after finishing the computation, 
 it will be automatically deleted. 
 
-## Run your job in a private netowrk in vRack
-You can create your cluster in a private network in vRack. So it is more secure than a public network. For using this feature add the option `--deployer vracfloatingip` to your command line. For example: 
+## Run your job in a private network in vRack
+You can create your cluster in a private network in vRack. So it is more secure than a public network. For using this 
+feature add the option `--deployer vrackfloatingip` to your command line. For example: 
 ```
 ./ovh-spark-submit \
   --class org.apache.spark.examples.SparkPi \
@@ -134,7 +135,7 @@ You can create your cluster in a private network in vRack. So it is more secure 
   --version 2.4.0 \
   --total-executor-cores 10 \
   --executor-memory 10G \
-  --deployer vracfloatingip \
+  --deployer vrackfloatingip \
   swift://jar/spark-examples_2.11-2.4.0.jar  1000
 ```
 For using this feature you need to request for floating IP from OVH and currently it is active only in GRA5 region. 
@@ -168,7 +169,8 @@ Also a copy of log file will be saved in your local machine in "SparkLogs" folde
  
 Also you can find the address of Spark official master dashboard and SparkUI in this log page and you can open dashboard 
 and UI separately if you like. Master dashboard is on port 8080 of master IP (like: http://1.2.3.4:8080) and SparkUI will 
-be on port 4040 (like: http://1.2.3.4:4040). Then you can see all stdout and stderr of all workers and apps and also more details and information about your cluster. 
+be on port 4040 (like: http://1.2.3.4:4040). Then you can see all stdout and stderr of all workers and apps and also more 
+details and information about your cluster. 
 
 ### Pro tip #1 : How to calculate your billing ?
 For creating the cluster we use flavor b2-15, it means that each worker node will have 4 cores and 15 GB memory. 
