@@ -1,51 +1,59 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/satori/go.uuid"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ncw/swift"
 )
 
 var wg sync.WaitGroup
 
 func main() {
 
-	flagclass := flag.String("class", "", "Your application's main class (for Java / Scala apps)")
-	flagname := flag.String("name", "NoName", "A name of your application")
-	flagjars := flag.String("jars", "", `Comma-separated list of jars to include on the driver 
-and executor classpaths`)
+	flag.Usage = usage
+
+	flagclass := flag.String("class", "",
+		"Your application's main class (for Java / Scala apps)")
+	flagname := flag.String("name", "NoName",
+		"A name of your application")
+	flag.Var(&inputJars, "jars",
+		"Comma-separated list of jars to include on the driver \n"+
+			"and executor classpaths")
 	flagpackages := flag.String("packages", "",
-		`Comma-separated list of maven coordinates of jars to include 
-on the driver and executor classpaths. Will search the local
-maven repo, then maven central and any additional remote
-repositories given by --repositories. The format for the
-coordinates should be groupId:artifactId:version.`)
+		"Comma-separated list of maven coordinates of jars to include\n"+
+			"on the driver and executor classpaths. Will search the local\n"+
+			"maven repo, then maven central and any additional remote\n"+
+			"repositories given by --repositories. The format for the\n"+
+			"coordinates should be groupId:artifactId:version.\n")
 	flagexcludepackages := flag.String("exclude-packages", "",
-		`Comma-separated list of groupId:artifactId, to exclude while
-resolving the dependencies provided in --packages to avoid
-dependency conflicts.`)
+		"Comma-separated list of groupId:artifactId, to exclude while\n"+
+			"resolving the dependencies provided in --packages to avoid\n"+
+			"dependency conflicts.")
 	flagrepositories := flag.String("repositories", "",
-		`Comma-separated list of additional remote repositories to
-search for the maven coordinates given with --packages.`)
-	flagpyfiles := flag.String("py-files", "",
-		`Comma-separated list of .zip, .egg, or .py files to place
-on the PYTHONPATH for Python apps.`)
-	flagfiles := flag.String("files", "",
-		`Comma-separated list of files to be placed in the working
-directory of each executor. File paths of these files
-in executors can be accessed via SparkFiles.get(fileName).`)
-	flagconf := flag.String("conf", "", "Arbitrary Spark configuration property.")
+		"Comma-separated list of additional remote repositories to\n"+
+			"search for the maven coordinates given with --packages.")
+	flag.Var(&inputPys, "py-files",
+		"Comma-separated list of .zip, .egg, or .py files to place\n"+
+			"on the PYTHONPATH for Python apps.")
+	flag.Var(&inputFiles, "files",
+		"Comma-separated list of files to be placed in the working\n"+
+			"directory of each executor. File paths of these files\n"+
+			"in executors can be accessed via SparkFiles.get(fileName).")
+	flag.Var(&sparkConf, "conf", "Arbitrary Spark configuration property.")
 	flagpropertiesfile := flag.String("properties-file", "",
-		`Path to a file from which to load extra properties. If not
-specified, this will look for conf/spark-defaults.conf.`)
+		"Path to a file from which to load extra properties. If not\n"+
+			"specified, this will look for conf/spark-defaults.conf.")
 	flagdrivermemory := flag.String("driver-memory", "",
 		"Memory for driver (e.g. 1000M, 2G) (Default: 1024M)")
 	flagdriverjavaoptions := flag.String("driver-java-options", "",
@@ -53,9 +61,9 @@ specified, this will look for conf/spark-defaults.conf.`)
 	flagdriverlibrarypath := flag.String("driver-library-path", "",
 		"Extra library path entries to pass to the driver")
 	flagdriverclasspath := flag.String("driver-class-path", "",
-		`Extra class path entries to pass to the driver. Note that
-jars added with --jars are automatically included in the
-classpath.`)
+		"Extra class path entries to pass to the driver. Note that\n"+
+			"jars added with --jars are automatically included in the\n"+
+			"classpath.")
 	flagexecutormemory := flag.String("executor-memory", "",
 		"Memory per executor (e.g. 1000M, 2G) (Default: 1G)")
 	flagproxyuser := flag.String("proxy-user", "",
@@ -67,65 +75,72 @@ classpath.`)
 	flagsupervise := flag.Bool("supervise", false, "If given, restarts the driver on failure")
 	flagtotalexecutorcores := flag.Int("total-executor-cores", 2, "Total cores for all executors")
 	flagexecutorcores := flag.Int("executor-cores", 0,
-		`Number of cores per executor. (Default: 1 in YARN mode
-or all available cores on the worker in standalone mode)`)
+		"Number of cores per executor. (Default: 1 in YARN mode\n"+
+			"or all available cores on the worker in standalone mode)")
 	flagkeepinfra := flag.Bool("keep-infra", false,
 		"By using this flag, the spark cluster will not be deleted after finishing the job. ")
-	flagdeployer := flag.String("deployer", "publicsequentialworkerjoin", "It selects deployer and infrastructure type.")
-	flagnetwork := flag.String("network", "Ext-Net", "Private network name inside openstack project."+
-		"If if is not mentioned, the cluster will be created in public network Ext-Net")
+	flagnetworkname := flag.String("network-name", "sparknetwork", "Network name inside openstack project.")
+	flagsubnetrange := flag.String("subnet-range", "192.168.18.0/24", "If the selected network is a private network, \n"+
+		"the spark cluster will be created in this subnet range.")
 
-	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = flagclass, flagconf,
+	_, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = flagclass, sparkConf,
 		flagdriverclasspath, flagdrivercores, flagdriverjavaoptions, flagdriverlibrarypath, flagdrivermemory,
-		flagexcludepackages, flagexecutorcores, flagexecutormemory, flagfiles, flagjars, flagname, flagpackages,
-		flagpropertiesfile, flagproxyuser, flagpyfiles, flagrepositories, flagsupervise, flagtotalexecutorcores,
-		flagverbose, flagversion, flagkeepinfra, flagdeployer, flagnetwork
+		flagexcludepackages, flagexecutorcores, flagexecutormemory, inputPys, inputJars, flagname, flagpackages,
+		flagpropertiesfile, flagproxyuser, inputFiles, flagrepositories, flagsupervise, flagtotalexecutorcores,
+		flagverbose, flagversion, flagkeepinfra, flagnetworkname, flagsubnetrange
 
 	flag.Parse()
 
-	if *flagclass == "" {
-		fmt.Println("Please enter the class name in --class option ")
-		os.Exit(1)
-	}
-
 	CheckSparkVersion(*flagversion)
 
-	jarpath := flag.Arg(0)
+	mainApp := flag.Arg(0)
+	allArgs := strings.Join(os.Args[1:], " ")
 
 	fmt.Println("name:", *flagname)
-	fmt.Println("Jar File:", jarpath)
-	allArgs := fmt.Sprint(os.Args[1:])
-	allArgs = strings.Replace(allArgs, "[", "", -1)
-	allArgs = strings.Replace(allArgs, "]", "", -1)
-
-	fmt.Println("all args:", allArgs)
+	fmt.Println("All args:", allArgs)
+	fmt.Println("conf: ", sparkConf)
+	fmt.Println("file:", strings.Join(inputFiles[:], ","))
+	fmt.Println("jars:", strings.Join(inputJars[:], ","))
+	fmt.Println("py-files:", strings.Join(inputPys[:], ","))
+	fmt.Println("Main application file:", mainApp)
 
 	conn := Authenticate()
 
-	CheckJarFile(jarpath, conn)
-
+	//check if all input files exist (check in parallel)
+	if *flagpropertiesfile != "" {
+		wg.Add(1)
+		CheckInputFile(*flagpropertiesfile, conn)
+	}
 	wg.Add(1)
+	go CheckInputFile(mainApp, conn)
+	Map(inputFiles, conn, CheckInputFile)
+	Map(inputJars, conn, CheckInputFile)
+	Map(inputPys, conn, CheckInputFile)
+	wg.Wait()
 
-	go UploadJar(jarpath, conn)
+	ServerAddress := "http://51.38.224.115:8090" //sparkalpha server
 
-	ServerAddress := "http://51.75.193.10:8090" //sparkalpha main server
-	//ServerAddress := "http://145.239.28.145:8090"    //pre production test server
-
-	id, err := uuid.NewV4()
-	sessionID := id.String()
-	fmt.Println("Session ID: " + sessionID)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	var deployer = "vrackfloatingip"
+	if *flagnetworkname == "Ext-Net" {
+		deployer = "public"
 	}
 
-	if *flagdeployer == "vracfloatingip" && *flagnetwork == "Ext-Net" {
-		*flagnetwork = "sparknetwork"
+	//just list of the files is enough, because all of them will be in /home/ubuntu directory in spark master node
+	deployerArgs := " --name " + *flagname + " --token " + conn.AuthToken +
+		" --project-id " + conn.TenantId + " --region " + conn.Region + " --network-name " + *flagnetworkname +
+		" --subnet-range " + *flagsubnetrange + " " + allArgs //allArgs should be at the end because jar file and arguments should be at the end.
+	if len(inputFiles) > 0 {
+		deployerArgs += " --all-input-files " + AllFiles(inputFiles)
+	}
+	if len(inputJars) > 0 {
+		deployerArgs += " --all-input-jars " + AllFiles(inputJars)
+	}
+	if len(inputPys) > 0 {
+		deployerArgs += " --all-input-pys " + AllFiles(inputPys)
 	}
 
-	resp, err := http.PostForm(ServerAddress+"/sparksubmit", url.Values{"commandline": {allArgs},
-		"sessionID": {sessionID}, "name": {*flagname}, "token": {conn.AuthToken}, "projectid": {conn.TenantId},
-		"region": {conn.Region}, "deployer": {*flagdeployer}, "network": {*flagnetwork}})
+	resp, err := http.PostForm(ServerAddress+"/", url.Values{"deployerArgs": {deployerArgs},
+		"deployer": {deployer}, "name": {*flagname}})
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -138,19 +153,41 @@ or all available cores on the worker in standalone mode)`)
 	}
 	fmt.Println(string(body))
 
-	//fmt.Println("Spark job submitted. You can see the output log of your Spark job by this link: " +
-	//	ServerAddress + "/output/?sessionID=" + sessionID)
+	var cluster ClusterDocument
+	json.Unmarshal(body, &cluster)
 
-	currentTime := time.Now()
+	if cluster.Status != "Successful" {
+		fmt.Println("Cluster creation failed!")
+		fmt.Println(cluster)
+		os.Exit(1)
+	}
+
+	fullSwiftAddress := cluster.SwiftContainer + "/" + cluster.SwiftFolder
+	fmt.Println("Spark files and logs address in Swift storage is: ", fullSwiftAddress)
+	fmt.Println("Your cluster ID is: " + cluster.ClusterId)
+
+	if *flagpropertiesfile != "" {
+		wg.Add(1)
+		Upload2Swift(*flagpropertiesfile, cluster.SwiftContainer, cluster.SwiftFolder, conn)
+	}
+	wg.Add(1)
+	go Upload2Swift(mainApp, cluster.SwiftContainer, cluster.SwiftFolder, conn)
+	Map2(inputFiles, cluster.SwiftContainer, cluster.SwiftFolder, conn, Upload2Swift)
+	Map2(inputJars, cluster.SwiftContainer, cluster.SwiftFolder, conn, Upload2Swift)
+	Map2(inputPys, cluster.SwiftContainer, cluster.SwiftFolder, conn, Upload2Swift)
+
+	fmt.Println("Waiting for all upload operations...")
+	wg.Wait() //waiting for all uploads to complete.
+
 	var home = os.Getenv("HOME")
-	var logPath = home + "/SparkLogs/" + currentTime.Format("2006") + "/" + currentTime.Format("01") + "/" +
-		currentTime.Format("02") + "/" + currentTime.Format("15-04-05-") + *flagname + "/"
-	var logFullAddress = logPath + sessionID + ".log"
+	var logPath = home + "/SparkLogs/" + cluster.SwiftFolder + "/"
+	var logFullAddress = logPath + cluster.ClusterId + ".log"
 	os.MkdirAll(logPath, os.ModePerm)
+	fmt.Println("Log file created at " + logFullAddress)
 	var offset = 0
 	var output = ""
 	for !strings.Contains(output, "Goodbye.") && !strings.Contains(output, "failed!!") {
-		resp, err := http.Get(ServerAddress + "/output/?sessionID=" + sessionID + "&offset=" + strconv.Itoa(offset))
+		resp, err := http.Get(ServerAddress + "/" + cluster.ClusterId + "/logs?offset=" + strconv.Itoa(offset))
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -180,13 +217,64 @@ or all available cores on the worker in standalone mode)`)
 
 		resp.Body.Close()
 		time.Sleep(400 * time.Millisecond)
-		//write output to the local log file
-
 	}
 
-	fmt.Println("Logs were saved in your openstack swift storage and also in your local machine at addresss: \n" +
+	fmt.Println("\nLogs were saved in your openstack swift storage and also in your local machine at addresss: \n" +
 		logFullAddress)
 
-	wg.Wait()
+}
 
+type inputFileList []string
+
+func (i *inputFileList) String() string {
+	return "hello"
+}
+
+func (i *inputFileList) Set(value string) error {
+	var tmp = strings.Split(value, ",")
+	for _, element := range tmp {
+		*i = append(*i, element)
+	}
+
+	return nil
+}
+
+var inputJars, inputPys, inputFiles, sparkConf inputFileList
+
+func usage() { //TODO: to be completed.
+	fmt.Println("Usage:\n" +
+		"ovh-spark-submit <option> \n" +
+		"	options: \n" +
+		"" +
+		"--jar <your jar file> " +
+		"")
+
+}
+
+func Map(array []string, conn swift.Connection, f func(string, swift.Connection)) {
+	for _, v := range array {
+		wg.Add(1)
+		go f(v, conn)
+	}
+}
+func Map2(array []string, container string, folder string, conn swift.Connection, f func(string, string, string, swift.Connection)) {
+	for _, v := range array {
+		wg.Add(1)
+		go f(v, container, folder, conn)
+	}
+}
+func AllFiles(array []string) string {
+	var allFiles string
+	for _, v := range array {
+		allFiles += filepath.Base(v) + ","
+	}
+	allFiles = strings.TrimRight(allFiles, ",")
+	return allFiles
+}
+
+type ClusterDocument struct {
+	Status         string `json:"status"`
+	ClusterId      string `json:"clusterId"`
+	SwiftContainer string `json:"swiftContainer"`
+	SwiftFolder    string `json:"swiftFolder"`
 }
